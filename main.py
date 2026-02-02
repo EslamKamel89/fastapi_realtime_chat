@@ -1,6 +1,11 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 
-app = FastAPI(title="Fastapi Realtime Chat 🗨️")
+from config import settings
+
+load_dotenv()
+
+app = FastAPI(title=settings.APP_NAME)
 
 
 @app.get("/health")
