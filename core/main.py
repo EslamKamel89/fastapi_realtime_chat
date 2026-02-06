@@ -1,5 +1,7 @@
 from dotenv import load_dotenv
 
+from core.models_base import Base
+
 load_dotenv()
 
 from contextlib import asynccontextmanager
@@ -25,6 +27,10 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         print("startup: performing lightweight app checks")
+        async with database.engine.begin() as conn:
+            from apps.auth.models import User
+
+            await conn.run_sync(Base.metadata.create_all)
         yield
         print("shutdown: cleaning up")
         await database.dispose()
