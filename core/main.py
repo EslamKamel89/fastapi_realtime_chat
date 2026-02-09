@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 from core.config import settings
 from core.database import Database
 from core.deps import get_session
+from core.ws_registery import register_ws
 
 templates = Jinja2Templates(directory="templates")
 
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
             from apps.auth.models import User
 
             await conn.run_sync(Base.metadata.create_all)
+        register_ws(app)
         yield
         print("shutdown: cleaning up")
         await database.dispose()
