@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 from fastapi import (
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.auth.models import User
 from apps.messages.models import Message
+from apps.messages.repository import MessageRepository
 from core.deps import get_session
 
 active_connections: dict[int, set[WebSocket]] = defaultdict(set)
@@ -43,12 +45,23 @@ def register_ws(app: FastAPI) -> None:
         if not active_connections.get(user.id):
             active_connections[user.id] = set()
         active_connections[user.id].add(websocket)
+        message_repo = MessageRepository(session)
         try:
             while True:
                 message = await websocket.receive_text()
+                message_obj = await message_repo.create(user.id, message)
+                serialized = {
+                    "id": message_obj.id,
+                    "content": message_obj.content,
+                    "sender": {
+                        "id": message_obj.sender.id,
+                        "username": message_obj.sender.username,
+                        "email": message_obj.sender.email,
+                    },
+                }
                 for user_id, connections in active_connections.items():
                     for conn in connections:
-                        await conn.send_text(message)
+                        await conn.send_text(json.dumps(serialized))
         except WebSocketDisconnect as e:
             connections = active_connections.get(user.id)
             if connections:

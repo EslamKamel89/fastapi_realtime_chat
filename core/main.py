@@ -11,6 +11,7 @@ from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
+from apps.messages.router import router as messages_router
 from core.config import settings
 from core.database import Database
 from core.deps import get_session
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
     app.dependency_overrides[get_session] = database.get_session
+    app.include_router(messages_router)
 
     @app.get("/health")
     async def health():
@@ -49,8 +51,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse(request, "index.html", {})
