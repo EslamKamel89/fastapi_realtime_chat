@@ -22,13 +22,13 @@ async def get_current_user(
     websocket: WebSocket,
     session: AsyncSession = Depends(get_session),
 ):
-    email = websocket.headers.get("x-user-email")
+    email = websocket.query_params.get("email")
     if not email:
-        raise WebSocketException(status.WS_1008_POLICY_VIOLATION)
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     res = await session.execute(select(User).where(User.email == email))
     user = res.scalar_one_or_none()
     if not user:
-        raise WebSocketException(status.WS_1008_POLICY_VIOLATION)
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     return user
 
 
