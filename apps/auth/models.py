@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.models_base import Base, IdMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from apps.messages.models import Message
 
 
 class User(Base, IdMixin, TimestampMixin):
@@ -17,4 +22,7 @@ class User(Base, IdMixin, TimestampMixin):
         unique=True,
         nullable=True,
         index=True,
+    )
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="sender", lazy="selectin"
     )
