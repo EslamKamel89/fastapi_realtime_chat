@@ -9,13 +9,14 @@ from fastapi import (
     WebSocketException,
     status,
 )
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.auth.models import User
 from apps.messages.models import Message
 from apps.messages.repository import MessageRepository
-from core.deps import get_session
+from core.deps import get_redis, get_session
 
 active_connections: dict[int, set[WebSocket]] = defaultdict(set)
 
@@ -40,6 +41,7 @@ def register_ws(app: FastAPI) -> None:
         websocket: WebSocket,
         session: AsyncSession = Depends(get_session),
         user: User = Depends(get_current_user),
+        redis: Redis = Depends(get_redis),
     ):
         await websocket.accept()
         if not active_connections.get(user.id):
@@ -59,6 +61,7 @@ def register_ws(app: FastAPI) -> None:
                         "email": message_obj.sender.email,
                     },
                 }
+                await redis.publish("chat_messages", json.dumps(serialized))
                 for user_id, connections in active_connections.items():
                     for conn in connections:
                         await conn.send_text(json.dumps(serialized))
