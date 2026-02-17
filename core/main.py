@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,6 +13,7 @@ from core.database import Database
 from core.deps import get_redis, get_session
 from core.models_base import Base
 from core.redis import RedisService
+from core.redis_listeners import chat_messages_redis_listener
 from core.ws_registery import register_ws
 
 templates = Jinja2Templates(directory="templates")
@@ -33,11 +35,15 @@ def create_app() -> FastAPI:
             await conn.run_sync(Base.metadata.create_all)
         redis_service = RedisService()
         app.dependency_overrides[get_redis] = lambda: redis_service.client
+        chat_messages_redis_listener_task = asyncio.create_task(
+            chat_messages_redis_listener(redis_service.client)
+        )
         register_ws(app)
         print("startup COMPLETED")
         yield
         print("shutdown: cleaning up")
         await database.dispose()
+        chat_messages_redis_listener_task.cancel()
         await redis_service.close()
         print("shutdown COMPLETED")
 

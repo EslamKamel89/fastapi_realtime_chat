@@ -61,10 +61,13 @@ def register_ws(app: FastAPI) -> None:
                         "email": message_obj.sender.email,
                     },
                 }
-                await redis.publish("chat_messages", json.dumps(serialized))
-                for user_id, connections in active_connections.items():
-                    for conn in connections:
-                        await conn.send_text(json.dumps(serialized))
+                await redis.publish(
+                    "chat_messages",
+                    json.dumps(serialized),
+                )
+                # for user_id, connections in active_connections.items():
+                #     for conn in connections:
+                #         await conn.send_text(json.dumps(serialized))
         except WebSocketDisconnect as e:
             connections = active_connections.get(user.id)
             if connections:
